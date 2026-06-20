@@ -4,8 +4,8 @@ class Cleanmac < Formula
   desc "macOS cleanup CLI with dry-run and safety guardrails"
   homepage "https://github.com/imajinyun/cleanmac"
   url "https://github.com/imajinyun/cleanmac/archive/091b30afd9791eee4d871db7951e5a630adcc66a.tar.gz"
-  sha256 "0848ea0fc30886f7a69d0aab419d4be2c742de59d65da86b20dd2864b2a42a8d"
   version "0.1.0"
+  sha256 "0848ea0fc30886f7a69d0aab419d4be2c742de59d65da86b20dd2864b2a42a8d"
   license "MIT"
 
   depends_on "python@3.12"
