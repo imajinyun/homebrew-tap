@@ -1,0 +1,93 @@
+name: Update cleanmac formula
+
+on:
+  repository_dispatch:
+    types:
+      - cleanmac_release
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "cleanmac version without leading v, e.g. 0.1.0"
+        required: true
+        type: string
+      tag:
+        description: "cleanmac git tag, e.g. v0.1.0. Defaults to v<version>."
+        required: false
+        type: string
+      formula_url:
+        description: "Optional direct URL to release cleanmac.rb"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update-formula:
+    name: Update Formula/cleanmac.rb
+    runs-on: macos-15
+    env:
+      CLEANMAC_REPO: imajinyun/cleanmac
+    steps:
+      - name: Checkout tap
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # pinned from actions/checkout@v6.0.3
+
+      - name: Resolve release inputs
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ github.event.client_payload.version || inputs.version }}"
+          tag="${{ github.event.client_payload.tag || inputs.tag }}"
+          formula_url="${{ github.event.client_payload.formula_url || inputs.formula_url }}"
+          if [ -z "$version" ]; then
+            echo "Missing version from repository_dispatch payload or workflow_dispatch input." >&2
+            exit 1
+          fi
+          if [ -z "$tag" ]; then
+            tag="v${version}"
+          fi
+          if [ -z "$formula_url" ]; then
+            formula_url="https://github.com/${CLEANMAC_REPO}/releases/download/${tag}/cleanmac.rb"
+          fi
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+          echo "formula_url=$formula_url" >>"$GITHUB_OUTPUT"
+
+      - name: Download generated formula
+        run: |
+          curl -L --fail --retry 3 "${{ steps.release.outputs.formula_url }}" -o Formula/cleanmac.rb
+
+      - name: Validate formula content
+        run: |
+          ruby -c Formula/cleanmac.rb
+          grep -q 'class Cleanmac < Formula' Formula/cleanmac.rb
+          grep -q 'cleanmac.capabilities.v1' Formula/cleanmac.rb
+          grep -q 'sha256 "[0-9a-f]\{64\}"' Formula/cleanmac.rb
+
+      - name: Tap local checkout
+        run: |
+          brew tap "${GITHUB_REPOSITORY_OWNER}/tap" "$GITHUB_WORKSPACE"
+
+      - name: Audit formula
+        run: brew audit --strict --online "${GITHUB_REPOSITORY_OWNER}/tap/cleanmac"
+
+      - name: Install and test formula
+        run: |
+          brew install --build-from-source "${GITHUB_REPOSITORY_OWNER}/tap/cleanmac"
+          cleanmac --json capabilities | python3 -m json.tool >/dev/null
+          brew test "${GITHUB_REPOSITORY_OWNER}/tap/cleanmac"
+
+      - name: Commit formula update
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- Formula/cleanmac.rb; then
+            echo "Formula/cleanmac.rb already matches cleanmac ${{ steps.release.outputs.tag }}."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/cleanmac.rb
+          git commit -m "cleanmac ${{ steps.release.outputs.version }}"
+          git push

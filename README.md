@@ -81,6 +81,19 @@ brew upgrade cleanmac
 
 ---
 
+## 🤖 Automated updates
+
+This tap is designed to be updated automatically by the main `cleanmac` release workflow:
+
+1. 🏷️ A new `cleanmac` tag release is published.
+2. 📦 The release uploads `cleanmac.rb` as a release asset.
+3. 📬 The main repository sends a `repository_dispatch` event to this tap.
+4. ✅ This tap downloads the generated formula, audits it, installs it from source, runs `brew test`, and commits `Formula/cleanmac.rb`.
+
+Manual update is also available from GitHub Actions via **Update cleanmac formula** → **Run workflow** with a `version` such as `0.1.0`.
+
+---
+
 ## 🧹 Uninstall
 
 ```bash
