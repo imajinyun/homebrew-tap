@@ -8,6 +8,14 @@
 
 ```bash
 brew tap cleanmac/tap
+brew trust cleanmac/tap
+brew install cleanmac
+```
+
+Homebrew 6+ requires explicit trust for third-party taps before loading their formulae. If you prefer to trust only this formula instead of the whole tap, run:
+
+```bash
+brew trust --formula cleanmac/tap/cleanmac
 brew install cleanmac
 ```
 
@@ -87,4 +95,3 @@ brew untap cleanmac/tap
 - 🏠 Project: <https://github.com/imajinyun/cleanmac>
 - 🍺 Formula: [`Formula/cleanmac.rb`](Formula/cleanmac.rb)
 - 🔒 Safety model: dry-run first, explicit execution, review-constrained cleanup
-
